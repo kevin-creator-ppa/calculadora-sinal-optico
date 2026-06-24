@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Dados de runtime / temporários
+history.json
+tmp_inspect_logo.py
+
+# Sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:perfeitapalavra.com.br)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(extract-text \"C:\\\\Users\\\\Kevin Madeira\\\\Downloads\\\\FUNDAÇÃO E ORIGEM DA IGREJA PERFEITA PALAVRA \\(1\\).docx\")",
+      "Bash(pandoc \"C:\\\\Users\\\\Kevin Madeira\\\\Downloads\\\\FUNDAÇÃO E ORIGEM DA IGREJA PERFEITA PALAVRA \\(1\\).docx\" -o /tmp/doc_content.md)",
+      "Read(//tmp/**)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Kevin Madeira\\\\Documents\\\\Perfeita Palavra\" -File)",
+      "Bash(Select-Object Name, Length)",
+      "Bash(Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Kevin Madeira\\\\Documents\\\\Perfeita Palavra\" -File | Select-Object Name, @{Name=\"Tamanho\\(KB\\)\"; Expression={[math]::Round\\($_.Length/1KB, 2\\)}} | Format-Table -AutoSize)"
+    ]
+  }
+}

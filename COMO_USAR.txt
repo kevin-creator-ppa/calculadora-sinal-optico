@@ -1,0 +1,73 @@
+================================================================
+    CALCULADORA DE SINAL OPTICO - TELIUM
+    Como Usar
+================================================================
+
+PRIMEIRA VEZ:
+=============
+
+1. Duplo clique em:
+   INSTALAR_E_EXECUTAR.bat
+
+2. Uma janela preta aparecera instalando os pacotes
+   Aguarde completar
+
+3. A aplicacao abrira automaticamente no navegador
+   http://localhost:8501
+
+PROXIMAS VEZES:
+===============
+
+Simplesmente duplo clique em:
+EXECUTAR.bat
+
+A aplicacao abrira diretamente (mais rapido)
+
+================================================================
+
+ARQUIVOS DA PASTA:
+
+- app.py                    (Aplicacao principal)
+- gbics.csv                 (Base de dados de GBICs)
+- INSTALAR_E_EXECUTAR.bat  (Instalador e executor)
+- COMO_USAR.txt             (Este arquivo)
+
+================================================================
+
+USAR A APLICACAO:
+=================
+
+1. Preencha Interface, TX e RX para POP A
+2. Preencha Interface, TX e RX para POP B
+3. Selecione a GBIC em cada dropdown
+4. O sistema calcula e valida automaticamente
+5. Exporte PDF se necessario
+
+Exemplo:
+  POP A: Interface = TenGigabitEthernet 1/1/1
+         TX = -2.81 dBm
+         RX = -13.62 dBm
+         GBIC = 4LAN - 4L-SFPLXD
+
+  Resultado: Perda = 10.81 dB
+             Status = OK (dentro do budget 12 dB)
+
+================================================================
+
+SE DER ERRO:
+
+1. Feche todos os programas
+2. Abra CMD como Administrador
+3. Digite:
+   cd C:\Users\Kevin Madeira\Documents\Wired
+4. Depois:
+   pip install streamlit pandas plotly reportlab
+
+5. Execute novamente: INSTALAR_E_EXECUTAR.bat
+
+================================================================
+
+Versao: 1.0.0
+Data: 2026-06-03
+
+================================================================
