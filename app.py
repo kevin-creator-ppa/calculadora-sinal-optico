@@ -269,7 +269,7 @@ def main():
         st.session_state.section_title = "Insira os dados dos equipamentos"
 
     # Adicionar marca d'água
-    with open("assets/watermark-base64.txt", "r") as f:
+    with open("assets/watermark-base64.txt", "r", encoding="utf-8") as f:
         watermark_b64 = f.read().strip()
 
     st.markdown(f'''
