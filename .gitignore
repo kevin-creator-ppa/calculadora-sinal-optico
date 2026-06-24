@@ -15,3 +15,6 @@ tmp_inspect_logo.py
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Config local do Claude Code
+.claude/
