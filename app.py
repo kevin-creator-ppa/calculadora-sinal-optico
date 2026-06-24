@@ -22,47 +22,30 @@ st.set_page_config(
 
 st.markdown('''
     <style>
-    /* Light mode (default) */
+    /* Tema: segue o tema NATIVO do Streamlit (Settings -> Theme: Light/Dark).
+       As cores vêm das variáveis do Streamlit, com fallback para o tema claro
+       caso a versão não as exponha. Cores de marca/acento funcionam nos dois temas. */
     :root {
         --primary: #1e6fb3;
         --secondary: #ff7f0e;
         --success: #2ecc71;
         --error: #e74c3c;
-        --text-primary: #1f2d3d;
-        --text-secondary: #6b7b86;
-        --bg-light: #f4f7fb;
-        --bg-card: #ffffff;
-        --border-color: rgba(30,111,179,0.12);
+        --text-primary: var(--text-color, #1f2d3d);
+        --text-secondary: var(--text-color, #6b7b86);
+        --bg-light: var(--background-color, #f4f7fb);
+        --bg-card: var(--secondary-background-color, #ffffff);
+        --border-color: rgba(128,128,128,0.22);
         --header-gradient: linear-gradient(135deg, #1e6fb3 0%, #ff7f0e 100%);
-        --shadow: 0 6px 20px rgba(16,24,40,0.06);
-        --focus-ring: rgba(30,111,179,0.12);
+        --shadow: 0 6px 20px rgba(0,0,0,0.18);
+        --focus-ring: rgba(30,111,179,0.25);
         --base-font: 14px;
     }
 
-    /* Dark mode */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --primary: #1e6fb3;
-            --secondary: #ff7f0e;
-            --success: #2ecc71;
-            --error: #e74c3c;
-            --text-primary: #e6eef8;
-            --text-secondary: #9fb4c9;
-            --bg-light: #0b1220;
-            --bg-card: #0f1720;
-            --border-color: rgba(255,255,255,0.06);
-            --header-gradient: linear-gradient(135deg,#2a8fd4 0%, #ffa726 100%);
-            --shadow: 0 6px 20px rgba(0,0,0,0.45);
-            --focus-ring: rgba(30,111,179,0.2);
-            --base-font: 14px;
-        }
-    }
-
+    /* Não forçamos o fundo: deixamos o Streamlit pintar a base conforme o tema. */
     html, body, #root, .block-container {
         font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
         font-size: var(--base-font);
         color: var(--text-primary);
-        background: var(--bg-light) !important;
     }
 
     /* Header */
