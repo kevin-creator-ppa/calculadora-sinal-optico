@@ -22,30 +22,27 @@ st.set_page_config(
 
 st.markdown('''
     <style>
-    /* Tema: segue o tema NATIVO do Streamlit (Settings -> Theme: Light/Dark).
-       As cores vêm das variáveis do Streamlit, com fallback para o tema claro
-       caso a versão não as exponha. Cores de marca/acento funcionam nos dois temas. */
+    /* Tema neutro: NÃO dependemos de variáveis do Streamlit (esta versão não as
+       expõe ao CSS injetado). Os cards usam fundo translúcido e o TEXTO HERDA a
+       cor do tema ativo do Streamlit — assim funciona em claro e escuro. As cores
+       de marca/acento (azul, laranja, verde, vermelho) funcionam nos dois temas. */
     :root {
-        --primary: #1e6fb3;
+        --primary: #2a8fd4;
         --secondary: #ff7f0e;
         --success: #2ecc71;
         --error: #e74c3c;
-        --text-primary: var(--text-color, #1f2d3d);
-        --text-secondary: var(--text-color, #6b7b86);
-        --bg-light: var(--background-color, #f4f7fb);
-        --bg-card: var(--secondary-background-color, #ffffff);
-        --border-color: rgba(128,128,128,0.22);
+        --bg-card: rgba(130,130,130,0.10);
+        --border-color: rgba(130,130,130,0.28);
         --header-gradient: linear-gradient(135deg, #1e6fb3 0%, #ff7f0e 100%);
         --shadow: 0 6px 20px rgba(0,0,0,0.18);
-        --focus-ring: rgba(30,111,179,0.25);
+        --focus-ring: rgba(42,143,212,0.30);
         --base-font: 14px;
     }
 
-    /* Não forçamos o fundo: deixamos o Streamlit pintar a base conforme o tema. */
+    /* Apenas fonte/tamanho; a COR do texto fica por conta do tema do Streamlit. */
     html, body, #root, .block-container {
         font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
         font-size: var(--base-font);
-        color: var(--text-primary);
     }
 
     /* Header */
@@ -60,7 +57,7 @@ st.markdown('''
 
     /* Floating label helper for markdown-wrapped inputs */
     .floating-label{ position:relative; }
-    .floating-label label{ position:absolute; left:12px; top:10px; font-size:12px; color:var(--text-secondary); transition:all .18s ease; pointer-events:none; }
+    .floating-label label{ position:absolute; left:12px; top:10px; font-size:12px; opacity:0.7; transition:all .18s ease; pointer-events:none; }
     .floating-label input:focus + label, .floating-label input:not(:placeholder-shown) + label{ transform:translateY(-18px) scale(.92); opacity:0.95; }
 
     /* Buttons */
@@ -68,13 +65,13 @@ st.markdown('''
     [data-testid="stButton"] button:focus{ box-shadow:0 6px 20px var(--focus-ring); }
 
     /* Metrics */
-    .metric-label{ font-size:11px; color:var(--text-secondary); text-transform:uppercase; }
+    .metric-label{ font-size:11px; opacity:0.65; text-transform:uppercase; }
     .metric-value{ font-size:20px; color:var(--primary); font-weight:800; }
 
     .validation-grid{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px; margin-bottom: 18px; }
     .validation-card{ background:var(--bg-card); border-radius:14px; padding:18px; box-shadow:var(--shadow); border:1px solid var(--border-color); }
-    .validation-title{ font-weight:700; margin-bottom:12px; color:var(--text-primary); }
-    .validation-item{ margin-bottom:10px; padding:12px 14px; border-radius:10px; background:rgba(30,111,179,0.04); color:var(--text-primary); }
+    .validation-title{ font-weight:700; margin-bottom:12px; }
+    .validation-item{ margin-bottom:10px; padding:12px 14px; border-radius:10px; background:rgba(130,130,130,0.10); }
     .validation-item.validation-ok{ border-left:4px solid var(--success); }
     .validation-item.validation-error{ border-left:4px solid var(--error); background:rgba(231,76,60,0.08); }
     .status-container{ margin-top:10px; padding:16px 18px; border-radius:14px; background:rgba(30,111,179,0.07); border:1px solid rgba(30,111,179,0.18); }
