@@ -36,7 +36,6 @@ st.markdown('''
         --header-gradient: linear-gradient(135deg, #1e6fb3 0%, #ff7f0e 100%);
         --shadow: 0 6px 20px rgba(16,24,40,0.06);
         --focus-ring: rgba(30,111,179,0.12);
-        --watermark-opacity: 0.06;
         --base-font: 14px;
     }
 
@@ -55,7 +54,6 @@ st.markdown('''
             --header-gradient: linear-gradient(135deg,#2a8fd4 0%, #ffa726 100%);
             --shadow: 0 6px 20px rgba(0,0,0,0.45);
             --focus-ring: rgba(30,111,179,0.2);
-            --watermark-opacity: 0.10;
             --base-font: 14px;
         }
     }
@@ -67,15 +65,9 @@ st.markdown('''
         background: var(--bg-light) !important;
     }
 
-    /* Watermark lazy and responsive */
-    .watermark{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:0; pointer-events:none; width:520px; height:520px; opacity:var(--watermark-opacity); filter:grayscale(40%); }
-    @media (max-width:900px){ .watermark{ width:320px; height:320px; opacity:calc(var(--watermark-opacity) * 0.6);} }
-    @media (max-width:480px){ .watermark{ display:none; } }
-
     /* Header */
     .main-header{ background:var(--header-gradient); padding:24px; border-radius:10px; margin-bottom:18px; box-shadow:var(--shadow); }
     .header-content{ display:flex; align-items:center; gap:16px; }
-    .logo-icon{ width:56px; height:56px; display:flex; align-items:center; justify-content:center; }
     .header-text h1{ color:#fff; font-size:28px; margin:0; font-weight:700; }
 
     /* Cards and inputs */
@@ -267,16 +259,6 @@ def main():
         st.session_state.app_subtitle = ""
     if "section_title" not in st.session_state:
         st.session_state.section_title = "Insira os dados dos equipamentos"
-
-    # Adicionar marca d'água
-    with open("assets/watermark-base64.txt", "r", encoding="utf-8") as f:
-        watermark_b64 = f.read().strip()
-
-    st.markdown(f'''
-    <div class="watermark">
-        <img src="data:image/png;base64,{watermark_b64}" alt="Watermark">
-    </div>
-    ''' , unsafe_allow_html=True)
 
     # Header dinâmico
     safe_app_title = html.escape(st.session_state.app_title)
