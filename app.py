@@ -17,7 +17,7 @@ st.set_page_config(
     page_title="Calculadora de Sinal Óptico",
     page_icon="(antenna)",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown('''
@@ -111,6 +111,11 @@ st.markdown('''
 
     /* Hide deploy */
     button[title="Deploy"], a[title="Deploy"]{ display:none !important; }
+
+    /* Ocultar barra lateral (Configurações + Navegação) e seu botão de abrir */
+    [data-testid="stSidebar"]{ display:none !important; }
+    [data-testid="stSidebarCollapsedControl"]{ display:none !important; }
+    [data-testid="collapsedControl"]{ display:none !important; }
     </style>
     ''', unsafe_allow_html=True)
     

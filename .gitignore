@@ -12,6 +12,10 @@ env/
 history.json
 tmp_inspect_logo.py
 
+# Arquivos de trava de editores de planilha (LibreOffice/Excel)
+.~lock.*#
+~$*
+
 # Sistema
 .DS_Store
 Thumbs.db
