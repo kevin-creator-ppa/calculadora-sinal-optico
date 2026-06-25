@@ -384,6 +384,9 @@ def main():
             loss_ok_a = (loss_ab <= budget_a)
             loss_ok_b = (loss_ba <= budget_b)
 
+            alcance_a = formatar_km(gbic_a.get("quilometragem"))
+            alcance_b = formatar_km(gbic_b.get("quilometragem"))
+
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
             st.markdown("### Resultados")
 
@@ -409,6 +412,7 @@ def main():
                         <span class="result-label">GBIC</span>
                         <span class="result-value">{gbic_a["modelo"]}</span>
                     </div>
+                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_a} km</span></div>' if alcance_a else ''}
                     <div class="loss-display" style="margin-top: 12px;">Perda: {loss_ab} dB</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -433,6 +437,7 @@ def main():
                         <span class="result-label">GBIC</span>
                         <span class="result-value">{gbic_b["modelo"]}</span>
                     </div>
+                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_b} km</span></div>' if alcance_b else ''}
                     <div class="loss-display" style="margin-top: 12px;">Perda: {loss_ba} dB</div>
                 </div>
                 """, unsafe_allow_html=True)
