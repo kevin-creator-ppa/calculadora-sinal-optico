@@ -52,6 +52,10 @@ st.markdown('''
 
     /* Cards and inputs */
     .input-card, .result-card, .metric-box{ background:var(--bg-card); border-radius:10px; padding:18px; box-shadow:var(--shadow); border:1px solid var(--border-color); }
+
+    /* Linhas dos cards de Resultados: rótulo em azul, valor herdando o tema */
+    .result-row{ margin-bottom:6px; }
+    .result-label{ color:var(--primary); font-weight:600; }
     .input-card{ transition:transform .18s ease, box-shadow .18s ease; }
     .input-card:focus-within{ transform:translateY(-3px); box-shadow:0 12px 30px rgba(16,24,40,0.08); }
 
@@ -404,23 +408,11 @@ def main():
                 st.markdown(f"""
                 <div class="result-card pop-a">
                     <div style="font-weight: 700; font-size: 16px; margin-bottom: 12px;">{st.session_state.pop_a_name}</div>
-                    <div class="result-row">
-                        <span class="result-label">Interface</span>
-                        <span class="result-value">{interface_a}</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">TX</span>
-                        <span class="result-value">{tx_a} dBm</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">RX</span>
-                        <span class="result-value">{rx_a} dBm</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">GBIC</span>
-                        <span class="result-value">{gbic_a["modelo"]}</span>
-                    </div>
-                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_a} Km</span></div>' if alcance_a else ''}<div class="loss-display" style="margin-top: 12px;">Perda: {loss_ab} dB</div>
+                    <div class="result-row"><span class="result-label">Interface:</span> <span class="result-value">{interface_a}</span></div>
+                    <div class="result-row"><span class="result-label">TX:</span> <span class="result-value">{tx_a} dBm</span></div>
+                    <div class="result-row"><span class="result-label">RX:</span> <span class="result-value">{rx_a} dBm</span></div>
+                    <div class="result-row"><span class="result-label">GBIC:</span> <span class="result-value">{gbic_a["modelo"]}</span></div>
+                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_a} Km</span></div>' if alcance_a else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ab} dB</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -428,23 +420,11 @@ def main():
                 st.markdown(f"""
                 <div class="result-card pop-b">
                     <div style="font-weight: 700; font-size: 16px; margin-bottom: 12px;">{st.session_state.pop_b_name}</div>
-                    <div class="result-row">
-                        <span class="result-label">Interface</span>
-                        <span class="result-value">{interface_b}</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">TX</span>
-                        <span class="result-value">{tx_b} dBm</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">RX</span>
-                        <span class="result-value">{rx_b} dBm</span>
-                    </div>
-                    <div class="result-row">
-                        <span class="result-label">GBIC</span>
-                        <span class="result-value">{gbic_b["modelo"]}</span>
-                    </div>
-                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_b} Km</span></div>' if alcance_b else ''}<div class="loss-display" style="margin-top: 12px;">Perda: {loss_ba} dB</div>
+                    <div class="result-row"><span class="result-label">Interface:</span> <span class="result-value">{interface_b}</span></div>
+                    <div class="result-row"><span class="result-label">TX:</span> <span class="result-value">{tx_b} dBm</span></div>
+                    <div class="result-row"><span class="result-label">RX:</span> <span class="result-value">{rx_b} dBm</span></div>
+                    <div class="result-row"><span class="result-label">GBIC:</span> <span class="result-value">{gbic_b["modelo"]}</span></div>
+                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_b} Km</span></div>' if alcance_b else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ba} dB</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
