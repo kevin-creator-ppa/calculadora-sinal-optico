@@ -142,6 +142,29 @@ def load_gbics_data():
         st.error("❌ Arquivo gbics.csv não encontrado!")
         return pd.DataFrame()
 
+def formatar_km(valor):
+    """Retorna a quilometragem formatada (ex.: 40 -> '40', 0.3 -> '0,3') ou '' se vazia."""
+    if valor is None:
+        return ""
+    texto = str(valor).strip().replace(",", ".")
+    if texto in ("", "nan", "None"):
+        return ""
+    try:
+        num = float(texto)
+    except ValueError:
+        return str(valor).strip()
+    if num == int(num):
+        return str(int(num))
+    return ("%g" % num).replace(".", ",")
+
+def formatar_opcao_gbic(row):
+    """Monta 'Fabricante - Modelo (XKm)'; o sufixo de km só aparece se preenchido."""
+    base = f"{row['fabricante']} - {row['modelo']}"
+    km = formatar_km(row.get("quilometragem") if hasattr(row, "get") else None)
+    if km:
+        base += f" ({km}Km)"
+    return base
+
 def load_history():
     if os.path.exists("history.json"):
         with open("history.json", "r") as f:
@@ -329,7 +352,7 @@ def main():
             tx_a = st.number_input("TX (dBm)", value=-2.81, step=0.01, key="tx_a", label_visibility="collapsed")
             rx_a = st.number_input("RX (dBm)", value=-13.62, step=0.01, key="rx_a", label_visibility="collapsed")
 
-            gbic_options = gbics_df.apply(lambda x: f"{x['fabricante']} - {x['modelo']}", axis=1).tolist()
+            gbic_options = gbics_df.apply(formatar_opcao_gbic, axis=1).tolist()
             gbic_a_selected = st.selectbox("GBIC", options=gbic_options, key="gbic_a", label_visibility="collapsed")
             gbic_a_idx = gbic_options.index(gbic_a_selected)
             gbic_a = gbics_df.iloc[gbic_a_idx]
