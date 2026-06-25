@@ -387,6 +387,14 @@ def main():
             alcance_a = formatar_km(gbic_a.get("quilometragem"))
             alcance_b = formatar_km(gbic_b.get("quilometragem"))
 
+            # Valor de alcance para a métrica: combina A e B
+            if alcance_a and alcance_b:
+                alcance_metrica = f"{alcance_a} Km" if alcance_a == alcance_b else f"{alcance_a} / {alcance_b} Km"
+            elif alcance_a or alcance_b:
+                alcance_metrica = f"{alcance_a or alcance_b} Km"
+            else:
+                alcance_metrica = "—"
+
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
             st.markdown("### Resultados")
 
@@ -412,7 +420,7 @@ def main():
                         <span class="result-label">GBIC</span>
                         <span class="result-value">{gbic_a["modelo"]}</span>
                     </div>
-                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_a} km</span></div>' if alcance_a else ''}
+                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_a} Km</span></div>' if alcance_a else ''}
                     <div class="loss-display" style="margin-top: 12px;">Perda: {loss_ab} dB</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -437,7 +445,7 @@ def main():
                         <span class="result-label">GBIC</span>
                         <span class="result-value">{gbic_b["modelo"]}</span>
                     </div>
-                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_b} km</span></div>' if alcance_b else ''}
+                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_b} Km</span></div>' if alcance_b else ''}
                     <div class="loss-display" style="margin-top: 12px;">Perda: {loss_ba} dB</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -445,7 +453,7 @@ def main():
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
             st.markdown("### Métricas")
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 st.markdown(f"""
@@ -468,6 +476,14 @@ def main():
                 <div class="metric-box">
                     <div class="metric-label">Budget GBIC</div>
                     <div class="metric-value">{budget_a} dB</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with col4:
+                st.markdown(f"""
+                <div class="metric-box">
+                    <div class="metric-label">Alcance GBIC</div>
+                    <div class="metric-value">{alcance_metrica}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
