@@ -53,9 +53,10 @@ st.markdown('''
     /* Cards and inputs */
     .input-card, .result-card, .metric-box{ background:var(--bg-card); border-radius:10px; padding:18px; box-shadow:var(--shadow); border:1px solid var(--border-color); }
 
-    /* Linhas dos cards de Resultados: rótulo em azul, valor herdando o tema */
+    /* Linhas dos cards de Resultados: rótulo em azul, valor herdando o tema.
+       Rótulo com largura fixa para os valores alinharem em coluna. */
     .result-row{ margin-bottom:6px; }
-    .result-label{ color:var(--primary); font-weight:600; }
+    .result-label{ color:var(--primary); font-weight:600; display:inline-block; min-width:92px; vertical-align:top; }
     .input-card{ transition:transform .18s ease, box-shadow .18s ease; }
     .input-card:focus-within{ transform:translateY(-3px); box-shadow:0 12px 30px rgba(16,24,40,0.08); }
 
