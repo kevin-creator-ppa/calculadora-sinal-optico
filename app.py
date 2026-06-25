@@ -420,8 +420,7 @@ def main():
                         <span class="result-label">GBIC</span>
                         <span class="result-value">{gbic_a["modelo"]}</span>
                     </div>
-                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_a} Km</span></div>' if alcance_a else ''}
-                    <div class="loss-display" style="margin-top: 12px;">Perda: {loss_ab} dB</div>
+                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_a} Km</span></div>' if alcance_a else ''}<div class="loss-display" style="margin-top: 12px;">Perda: {loss_ab} dB</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -445,8 +444,7 @@ def main():
                         <span class="result-label">GBIC</span>
                         <span class="result-value">{gbic_b["modelo"]}</span>
                     </div>
-                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_b} Km</span></div>' if alcance_b else ''}
-                    <div class="loss-display" style="margin-top: 12px;">Perda: {loss_ba} dB</div>
+                    {f'<div class="result-row"><span class="result-label">Alcance</span><span class="result-value">{alcance_b} Km</span></div>' if alcance_b else ''}<div class="loss-display" style="margin-top: 12px;">Perda: {loss_ba} dB</div>
                 </div>
                 """, unsafe_allow_html=True)
 
