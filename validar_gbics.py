@@ -52,6 +52,14 @@ def main():
                                       "RX invertido (rx_min %s > rx_max %s)" % (rx_min, rx_max)))
                 if budget <= 0:
                     problemas.append((linha, modelo, "budget invalido (%s)" % budget))
+
+                # quilometragem e opcional; se preenchida, precisa ser numerica
+                km = (row.get("quilometragem") or "").strip()
+                if km:
+                    try:
+                        para_numero(km)
+                    except (ValueError, TypeError):
+                        problemas.append((linha, modelo, "quilometragem nao-numerica (%s)" % km))
     except FileNotFoundError:
         print("VALIDACAO FALHOU: arquivo gbics.csv nao encontrado.")
         return 1
