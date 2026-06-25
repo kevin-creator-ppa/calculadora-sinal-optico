@@ -53,13 +53,19 @@ def main():
                 if budget <= 0:
                     problemas.append((linha, modelo, "budget invalido (%s)" % budget))
 
-                # quilometragem e opcional; se preenchida, precisa ser numerica
+                # quilometragem e opcional; se preenchida, precisa ser numero
+                # (km) ou numero com sufixo de unidade m/km. Ex.: 40, 80km, 300m.
                 km = (row.get("quilometragem") or "").strip()
                 if km:
+                    corpo = km.lower().replace(" ", "")
+                    for suf in ("km", "m", "k"):
+                        if corpo.endswith(suf):
+                            corpo = corpo[:-len(suf)]
+                            break
                     try:
-                        para_numero(km)
+                        para_numero(corpo)
                     except (ValueError, TypeError):
-                        problemas.append((linha, modelo, "quilometragem nao-numerica (%s)" % km))
+                        problemas.append((linha, modelo, "quilometragem invalida (%s) - use ex.: 40, 80km, 300m" % km))
     except FileNotFoundError:
         print("VALIDACAO FALHOU: arquivo gbics.csv nao encontrado.")
         return 1

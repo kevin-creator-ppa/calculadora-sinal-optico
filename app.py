@@ -147,27 +147,37 @@ def load_gbics_data():
         st.error("❌ Arquivo gbics.csv não encontrado!")
         return pd.DataFrame()
 
-def formatar_km(valor):
-    """Retorna a quilometragem formatada (ex.: 40 -> '40', 0.3 -> '0,3') ou '' se vazia."""
+def alcance_texto(valor):
+    """Formata o alcance com unidade para exibição.
+       Aceita número puro (km) ou sufixos m/km. Ex.: '40' -> '40 Km';
+       '300m' -> '300 m'; '80km' -> '80 Km'. Vazio/invalido -> '' (ou o texto cru)."""
     if valor is None:
         return ""
-    texto = str(valor).strip().replace(",", ".")
-    if texto in ("", "nan", "None"):
+    s = str(valor).strip()
+    if s.lower() in ("", "nan", "none"):
         return ""
+    low = s.lower().replace(" ", "")
+    if low.endswith("km"):
+        corpo, unidade = low[:-2], "Km"
+    elif low.endswith("m"):           # metros
+        corpo, unidade = low[:-1], "m"
+    elif low.endswith("k"):
+        corpo, unidade = low[:-1], "Km"
+    else:                             # número puro = km
+        corpo, unidade = low, "Km"
     try:
-        num = float(texto)
+        num = float(corpo.replace(",", "."))
     except ValueError:
-        return str(valor).strip()
-    if num == int(num):
-        return str(int(num))
-    return ("%g" % num).replace(".", ",")
+        return s
+    txt = str(int(num)) if num == int(num) else ("%g" % num).replace(".", ",")
+    return f"{txt} {unidade}"
 
 def formatar_opcao_gbic(row):
-    """Monta 'Fabricante - Modelo (XKm)'; o sufixo de km só aparece se preenchido."""
+    """Monta 'Fabricante - Modelo (40 Km)'; o sufixo só aparece se houver alcance."""
     base = f"{row['fabricante']} - {row['modelo']}"
-    km = formatar_km(row.get("quilometragem") if hasattr(row, "get") else None)
-    if km:
-        base += f" ({km}Km)"
+    alc = alcance_texto(row.get("quilometragem") if hasattr(row, "get") else None)
+    if alc:
+        base += f" ({alc})"
     return base
 
 def load_history():
@@ -389,14 +399,14 @@ def main():
             loss_ok_a = (loss_ab <= budget_a)
             loss_ok_b = (loss_ba <= budget_b)
 
-            alcance_a = formatar_km(gbic_a.get("quilometragem"))
-            alcance_b = formatar_km(gbic_b.get("quilometragem"))
+            alcance_a = alcance_texto(gbic_a.get("quilometragem"))
+            alcance_b = alcance_texto(gbic_b.get("quilometragem"))
 
             # Valor de alcance para a métrica: combina A e B
             if alcance_a and alcance_b:
-                alcance_metrica = f"{alcance_a} Km" if alcance_a == alcance_b else f"{alcance_a} / {alcance_b} Km"
+                alcance_metrica = alcance_a if alcance_a == alcance_b else f"{alcance_a} / {alcance_b}"
             elif alcance_a or alcance_b:
-                alcance_metrica = f"{alcance_a or alcance_b} Km"
+                alcance_metrica = alcance_a or alcance_b
             else:
                 alcance_metrica = "—"
 
@@ -413,7 +423,7 @@ def main():
                     <div class="result-row"><span class="result-label">TX:</span> <span class="result-value">{tx_a} dBm</span></div>
                     <div class="result-row"><span class="result-label">RX:</span> <span class="result-value">{rx_a} dBm</span></div>
                     <div class="result-row"><span class="result-label">GBIC:</span> <span class="result-value">{gbic_a["modelo"]}</span></div>
-                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_a} Km</span></div>' if alcance_a else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ab} dB</span></div>
+                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_a}</span></div>' if alcance_a else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ab} dB</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -425,7 +435,7 @@ def main():
                     <div class="result-row"><span class="result-label">TX:</span> <span class="result-value">{tx_b} dBm</span></div>
                     <div class="result-row"><span class="result-label">RX:</span> <span class="result-value">{rx_b} dBm</span></div>
                     <div class="result-row"><span class="result-label">GBIC:</span> <span class="result-value">{gbic_b["modelo"]}</span></div>
-                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_b} Km</span></div>' if alcance_b else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ba} dB</span></div>
+                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_b}</span></div>' if alcance_b else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ba} dB</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
