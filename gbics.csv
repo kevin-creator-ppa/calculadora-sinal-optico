@@ -12,6 +12,7 @@ fabricante,quilometragem,modelo,tx_min,tx_max,rx_min,rx_max,budget
 4LAN,40,4L-Q281GER4-L40,"-2,5","6,5","-20,5",-7,18
 4LAN,60,4L-PB531G-L60D,-3,4,-25,-3,22
 4LAN,60,4L-SFB10G3327-60,1,6,-20,"0,5",21
+Cisco,10,QSFP-40G-LR4,-7,"2,3","-13,7","2,3","6,7"
 Datacom,10,377.1401.00,0,2,-13,-10,15
 Datacom,20,377.0811.00 00,-2,3,-15,0.5,13
 Datacom,40,WXTRQP110LGAD,-4,"2,3","-15,7","2,3","11,7"
@@ -25,6 +26,7 @@ Datacom,,377714000000,0,"4,5",-21,0,21
 FS,10,SFP-10G-BX,-6,-3,-14.4,0.5,8.4
 FS,10,SFP-10G-BXD,-8.2,0.5,-14.4,0.5,6.2
 FS,40,SFP-10G-BX40,1,5,-15,"0,5",16
+Gigalight,300m,GX-85192-SRC ,"-7,3",-1,"-11,1",-1,"3,8"
 Precision,100m,PRE-QSFP28-SR4,"-8,4","2,4","-10,3","2,4","1,9"
 Precision,300m,PRE-SFP10G-SR,-6,-1,-10,"0,5",4
 Precision,10,PRE-SFP10G-10,-6,"-0,5",-14.4,0.5,"8,4"
@@ -32,6 +34,7 @@ Precision,10,PRE-QSFP-LR4,-7,"2,3","-11,5","2,3","4,5"
 Precision,10,PRE-QSFP28-LR4,"-4,3","4,5","-8,6","5,5","4,3"
 Precision,20,PRE-SFP-B35-20,-9,-3,-23,-3,11
 Precision,20,PRESFP10G-B32-20,-6,3,"-14,4",0.5,"8,4"
+Precision,20,PRE-SFP-B34 ,-9,-3,-20,-3,11
 Precision,40,PRE-SFP-B35-40,-5,0,-24,-1,24
 Precision,40,PRESFP10G-B32-40,0,5,-15,"0,5",15
 Precision,40,PRE-QSFP-ER4,"-2,7","4,5",-19,-1,"16,3"
