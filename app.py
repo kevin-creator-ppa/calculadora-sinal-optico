@@ -56,7 +56,7 @@ st.markdown('''
     /* Linhas dos cards de Resultados: rótulo em azul, valor herdando o tema.
        Rótulo com largura fixa para os valores alinharem em coluna. */
     .result-row{ margin-bottom:6px; }
-    .result-label{ color:var(--primary); font-weight:800; display:inline-block; min-width:72px; vertical-align:top; }
+    .result-label{ color:var(--primary); font-weight:800; display:inline-block; min-width:64px; vertical-align:top; }
     .input-card{ transition:transform .18s ease, box-shadow .18s ease; }
     .input-card:focus-within{ transform:translateY(-3px); box-shadow:0 12px 30px rgba(16,24,40,0.08); }
 
