@@ -31,6 +31,7 @@ st.markdown('''
         --secondary: #ff7f0e;
         --success: #2ecc71;
         --error: #e74c3c;
+        --warning: #e6a700;
         --bg-card: rgba(130,130,130,0.10);
         --border-color: rgba(130,130,130,0.28);
         --header-gradient: linear-gradient(135deg, #1e6fb3 0%, #ff7f0e 100%);
@@ -78,10 +79,16 @@ st.markdown('''
     .validation-title{ font-weight:700; margin-bottom:12px; }
     .validation-item{ margin-bottom:10px; padding:12px 14px; border-radius:10px; background:rgba(130,130,130,0.10); }
     .validation-item.validation-ok{ border-left:4px solid var(--success); }
+    .validation-item.validation-warn{ border-left:4px solid var(--warning); background:rgba(230,167,0,0.10); }
     .validation-item.validation-error{ border-left:4px solid var(--error); background:rgba(231,76,60,0.08); }
     .status-container{ margin-top:10px; padding:16px 18px; border-radius:14px; background:rgba(30,111,179,0.07); border:1px solid rgba(30,111,179,0.18); }
     .status-ok{ color:var(--success); font-weight:700; }
+    .status-warn{ color:var(--warning); font-weight:700; }
     .status-error{ color:var(--error); font-weight:700; }
+    /* Cores de semáforo para valores (métrica de margem) */
+    .metric-value.sem-ok{ color:var(--success); }
+    .metric-value.sem-warn{ color:var(--warning); }
+    .metric-value.sem-error{ color:var(--error); }
 
     /* Responsive columns: stack on small screens */
     @media (max-width:720px){
@@ -187,6 +194,32 @@ def formatar_opcao_modelo(row):
     if alc:
         base += f" ({alc})"
     return base
+
+def onda_texto(valor):
+    """Formata o comprimento de onda: número -> '1310 nm'; 'BiDi' -> 'BiDi'.
+       Vazio -> ''."""
+    if valor is None:
+        return ""
+    s = str(valor).strip()
+    if s.lower() in ("", "nan", "none"):
+        return ""
+    if s.lower() == "bidi":
+        return "BiDi"
+    try:
+        num = float(s.replace(",", "."))
+    except ValueError:
+        return s
+    txt = str(int(num)) if num == int(num) else ("%g" % num)
+    return f"{txt} nm"
+
+def estado_margem(margem, margem_min):
+    """Semáforo da margem: 'error' se estourou (<0), 'warn' se no limite
+       (0 a margem_min), 'ok' se há folga (>= margem_min)."""
+    if margem < 0:
+        return "error"
+    if margem < margem_min:
+        return "warn"
+    return "ok"
 
 def load_history():
     if os.path.exists("history.json"):
@@ -376,10 +409,10 @@ def main():
             rx_a = st.number_input("RX (dBm)", value=-13.62, step=0.01, key="rx_a", label_visibility="collapsed")
 
             fabricantes = list(dict.fromkeys(gbics_df["fabricante"].tolist()))
-            fab_a = st.selectbox("Fabricante A", options=fabricantes, key="fab_a", label_visibility="collapsed")
+            fab_a = st.selectbox("Fabricante", options=fabricantes, key="fab_a")
             df_fab_a = gbics_df[gbics_df["fabricante"] == fab_a].reset_index(drop=True)
             opts_a = df_fab_a.apply(formatar_opcao_modelo, axis=1).tolist()
-            gbic_a_selected = st.selectbox("GBIC A", options=opts_a, key=f"gbic_a_{fab_a}", label_visibility="collapsed")
+            gbic_a_selected = st.selectbox("SFP", options=opts_a, key=f"gbic_a_{fab_a}")
             gbic_a = df_fab_a.iloc[opts_a.index(gbic_a_selected)]
 
         with col2:
@@ -390,14 +423,19 @@ def main():
             tx_b = st.number_input("TX (dBm)", value=-3.19, step=0.01, key="tx_b", label_visibility="collapsed")
             rx_b = st.number_input("RX (dBm)", value=-14.53, step=0.01, key="rx_b", label_visibility="collapsed")
 
-            fab_b = st.selectbox("Fabricante B", options=fabricantes, key="fab_b", label_visibility="collapsed")
+            fab_b = st.selectbox("Fabricante", options=fabricantes, key="fab_b")
             df_fab_b = gbics_df[gbics_df["fabricante"] == fab_b].reset_index(drop=True)
             opts_b = df_fab_b.apply(formatar_opcao_modelo, axis=1).tolist()
-            gbic_b_selected = st.selectbox("GBIC B", options=opts_b, key=f"gbic_b_{fab_b}", label_visibility="collapsed")
+            gbic_b_selected = st.selectbox("SFP", options=opts_b, key=f"gbic_b_{fab_b}")
             gbic_b = df_fab_b.iloc[opts_b.index(gbic_b_selected)]
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
+            margem_min = st.number_input(
+                "Margem mínima de segurança (dB)",
+                min_value=0.0, value=3.0, step=0.5, key="margem_min",
+                help="Abaixo dessa folga o enlace é marcado como 'no limite' (amarelo), mesmo dentro da spec."
+            )
             if st.button("INICIAR CÁLCULO", use_container_width=True, key="calc_button"):
                 st.session_state.calcular = True
 
@@ -411,8 +449,18 @@ def main():
             loss_ok_a = (loss_ab <= budget_a)
             loss_ok_b = (loss_ba <= budget_b)
 
+            # Margem de segurança (folga em relação ao budget) e semáforo
+            margem_a = round(budget_a - loss_ab, 2)
+            margem_b = round(budget_b - loss_ba, 2)
+            estado_a = estado_margem(margem_a, margem_min)
+            estado_b = estado_margem(margem_b, margem_min)
+            margem_pior = min(margem_a, margem_b)
+            estado_pior = estado_margem(margem_pior, margem_min)
+
             alcance_a = alcance_texto(gbic_a.get("quilometragem"))
             alcance_b = alcance_texto(gbic_b.get("quilometragem"))
+            onda_a = onda_texto(gbic_a.get("comprimento_onda"))
+            onda_b = onda_texto(gbic_b.get("comprimento_onda"))
 
             # Valor de alcance para a métrica: combina A e B
             if alcance_a and alcance_b:
@@ -435,7 +483,7 @@ def main():
                     <div class="result-row"><span class="result-label">TX:</span> <span class="result-value">{tx_a} dBm</span></div>
                     <div class="result-row"><span class="result-label">RX:</span> <span class="result-value">{rx_a} dBm</span></div>
                     <div class="result-row"><span class="result-label">GBIC:</span> <span class="result-value">{gbic_a["modelo"]}</span></div>
-                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_a}</span></div>' if alcance_a else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ab} dB</span></div>
+                    {f'<div class="result-row"><span class="result-label">Onda:</span> <span class="result-value">{onda_a}</span></div>' if onda_a else ''}{f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_a}</span></div>' if alcance_a else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ab} dB</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -447,14 +495,14 @@ def main():
                     <div class="result-row"><span class="result-label">TX:</span> <span class="result-value">{tx_b} dBm</span></div>
                     <div class="result-row"><span class="result-label">RX:</span> <span class="result-value">{rx_b} dBm</span></div>
                     <div class="result-row"><span class="result-label">GBIC:</span> <span class="result-value">{gbic_b["modelo"]}</span></div>
-                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_b}</span></div>' if alcance_b else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ba} dB</span></div>
+                    {f'<div class="result-row"><span class="result-label">Onda:</span> <span class="result-value">{onda_b}</span></div>' if onda_b else ''}{f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_b}</span></div>' if alcance_b else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ba} dB</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
             st.markdown("### Métricas")
 
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
 
             with col1:
                 st.markdown(f"""
@@ -488,6 +536,14 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
 
+            with col5:
+                st.markdown(f"""
+                <div class="metric-box">
+                    <div class="metric-label">Margem (folga)</div>
+                    <div class="metric-value sem-{estado_pior}">{margem_pior} dB</div>
+                </div>
+                """, unsafe_allow_html=True)
+
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
             st.markdown("### Validação")
 
@@ -498,21 +554,31 @@ def main():
                     <div class="validation-item {'validation-ok' if tx_ok_a else 'validation-error'}">TX {tx_a} {'dentro' if tx_ok_a else '❌ fora'} de [{gbic_a['tx_min']}, {gbic_a['tx_max']}]</div>
                     <div class="validation-item {'validation-ok' if rx_ok_a else 'validation-error'}">RX {rx_a} {'dentro' if rx_ok_a else '❌ fora'} de [{gbic_a['rx_min']}, {gbic_a['rx_max']}]</div>
                     <div class="validation-item {'validation-ok' if loss_ok_a else 'validation-error'}">Perda {loss_ab} dB {'<=' if loss_ok_a else '>'} {budget_a} dB</div>
+                    <div class="validation-item validation-{estado_a}">Margem {margem_a} dB {'(estourou)' if estado_a == 'error' else '(no limite)' if estado_a == 'warn' else '(folga ok)'}</div>
                 </div>
                 <div class="validation-card">
                     <div class="validation-title">{st.session_state.pop_b_name} - Validação</div>
                     <div class="validation-item {'validation-ok' if tx_ok_b else 'validation-error'}">TX {tx_b} {'dentro' if tx_ok_b else '❌ fora'} de [{gbic_b['tx_min']}, {gbic_b['tx_max']}]</div>
                     <div class="validation-item {'validation-ok' if rx_ok_b else 'validation-error'}">RX {rx_b} {'dentro' if rx_ok_b else '❌ fora'} de [{gbic_b['rx_min']}, {gbic_b['rx_max']}]</div>
                     <div class="validation-item {'validation-ok' if loss_ok_b else 'validation-error'}">Perda {loss_ba} dB {'<=' if loss_ok_b else '>'} {budget_b} dB</div>
+                    <div class="validation-item validation-{estado_b}">Margem {margem_b} dB {'(estourou)' if estado_b == 'error' else '(no limite)' if estado_b == 'warn' else '(folga ok)'}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
             all_ok = tx_ok_a and rx_ok_a and loss_ok_a and tx_ok_b and rx_ok_b and loss_ok_b
+            no_limite = all_ok and estado_pior == "warn"
+
+            if not all_ok:
+                status_classe, status_texto = "status-error", "ENLACE FORA DE ESPECIFICAÇÃO ❌"
+            elif no_limite:
+                status_classe, status_texto = "status-warn", "ENLACE NO LIMITE ⚠️"
+            else:
+                status_classe, status_texto = "status-ok", "ENLACE DENTRO DA ESPECIFICAÇÃO"
 
             st.markdown(f"""
             <div class="status-container">
-                <div class="{'status-ok' if all_ok else 'status-error'}">{ 'ENLACE DENTRO DA ESPECIFICAÇÃO' if all_ok else 'ENLACE FORA DE ESPECIFICAÇÃO ❌'}</div>
+                <div class="{status_classe}">{status_texto}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -542,7 +608,7 @@ def main():
                     "perda": loss_ba
                 }
 
-                status = " ENLACE DENTRO DA ESPECIFICAÇÃO" if all_ok else "❌ ENLACE FORA DE ESPECIFICAÇÃO"
+                status = status_texto
 
                 pdf_buffer = generate_pdf(
                     pop_a_data,

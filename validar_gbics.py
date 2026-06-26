@@ -66,6 +66,15 @@ def main():
                         para_numero(corpo)
                     except (ValueError, TypeError):
                         problemas.append((linha, modelo, "quilometragem invalida (%s) - use ex.: 40, 80km, 300m" % km))
+
+                # comprimento de onda e opcional; se preenchido, deve ser numero
+                # (nm) ou o texto 'BiDi'. Ex.: 1310, 1550, BiDi.
+                onda = (row.get("comprimento_onda") or "").strip()
+                if onda and onda.lower() != "bidi":
+                    try:
+                        para_numero(onda)
+                    except (ValueError, TypeError):
+                        problemas.append((linha, modelo, "comprimento_onda invalido (%s) - use nm (ex.: 1310, 1550) ou 'BiDi'" % onda))
     except FileNotFoundError:
         print("VALIDACAO FALHOU: arquivo gbics.csv nao encontrado.")
         return 1
