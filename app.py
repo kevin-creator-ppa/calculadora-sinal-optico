@@ -180,6 +180,14 @@ def formatar_opcao_gbic(row):
         base += f" ({alc})"
     return base
 
+def formatar_opcao_modelo(row):
+    """Monta 'Modelo (40 Km)' (sem o fabricante, já escolhido antes)."""
+    base = f"{row['modelo']}".strip()
+    alc = alcance_texto(row.get("quilometragem") if hasattr(row, "get") else None)
+    if alc:
+        base += f" ({alc})"
+    return base
+
 def load_history():
     if os.path.exists("history.json"):
         with open("history.json", "r") as f:
@@ -367,10 +375,12 @@ def main():
             tx_a = st.number_input("TX (dBm)", value=-2.81, step=0.01, key="tx_a", label_visibility="collapsed")
             rx_a = st.number_input("RX (dBm)", value=-13.62, step=0.01, key="rx_a", label_visibility="collapsed")
 
-            gbic_options = gbics_df.apply(formatar_opcao_gbic, axis=1).tolist()
-            gbic_a_selected = st.selectbox("GBIC", options=gbic_options, key="gbic_a", label_visibility="collapsed")
-            gbic_a_idx = gbic_options.index(gbic_a_selected)
-            gbic_a = gbics_df.iloc[gbic_a_idx]
+            fabricantes = list(dict.fromkeys(gbics_df["fabricante"].tolist()))
+            fab_a = st.selectbox("Fabricante A", options=fabricantes, key="fab_a", label_visibility="collapsed")
+            df_fab_a = gbics_df[gbics_df["fabricante"] == fab_a].reset_index(drop=True)
+            opts_a = df_fab_a.apply(formatar_opcao_modelo, axis=1).tolist()
+            gbic_a_selected = st.selectbox("GBIC A", options=opts_a, key=f"gbic_a_{fab_a}", label_visibility="collapsed")
+            gbic_a = df_fab_a.iloc[opts_a.index(gbic_a_selected)]
 
         with col2:
             pop_b_inline = st.text_input("", value=st.session_state.pop_b_name, key="pop_b_inline", label_visibility="collapsed")
@@ -380,9 +390,11 @@ def main():
             tx_b = st.number_input("TX (dBm)", value=-3.19, step=0.01, key="tx_b", label_visibility="collapsed")
             rx_b = st.number_input("RX (dBm)", value=-14.53, step=0.01, key="rx_b", label_visibility="collapsed")
 
-            gbic_b_selected = st.selectbox("GBIC", options=gbic_options, key="gbic_b", label_visibility="collapsed")
-            gbic_b_idx = gbic_options.index(gbic_b_selected)
-            gbic_b = gbics_df.iloc[gbic_b_idx]
+            fab_b = st.selectbox("Fabricante B", options=fabricantes, key="fab_b", label_visibility="collapsed")
+            df_fab_b = gbics_df[gbics_df["fabricante"] == fab_b].reset_index(drop=True)
+            opts_b = df_fab_b.apply(formatar_opcao_modelo, axis=1).tolist()
+            gbic_b_selected = st.selectbox("GBIC B", options=opts_b, key=f"gbic_b_{fab_b}", label_visibility="collapsed")
+            gbic_b = df_fab_b.iloc[opts_b.index(gbic_b_selected)]
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -507,7 +519,7 @@ def main():
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
             st.markdown("### Ações")
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2 = st.columns(2)
 
             with col1:
                 if st.button("Limpar", use_container_width=True):
@@ -553,30 +565,6 @@ def main():
                     mime="application/pdf",
                     use_container_width=True
                 )
-
-            with col3:
-                if st.button("Salvar", use_container_width=True):
-                    history = load_history()
-
-                    new_entry = {
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "interface_a": interface_a,
-                        "tx_a": tx_a,
-                        "rx_a": rx_a,
-                        "gbic_a": gbic_a["modelo"],
-                        "perda_a": loss_ab,
-                        "interface_b": interface_b,
-                        "tx_b": tx_b,
-                        "rx_b": rx_b,
-                        "gbic_b": gbic_b["modelo"],
-                        "perda_b": loss_ba,
-                        "status": " OK" if all_ok else "❌ ERRO"
-                    }
-
-                    history.append(new_entry)
-                    save_history(history[-20:])
-
-                    st.success(" Cálculo salvo no histórico!")
 
     elif menu == "Histórico":
         st.markdown("### Histórico de Cálculos")
