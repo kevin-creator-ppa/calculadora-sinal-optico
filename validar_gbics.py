@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Valida a planilha gbics.csv antes de publicar.
-Sai com codigo 1 (erro) se encontrar problemas; 0 se estiver tudo certo.
+- PROBLEMAS bloqueiam o envio (sai com codigo 1).
+- AVISOS apenas alertam (sai com codigo 0, mas mostra a lista).
 Nao depende de bibliotecas externas (so a biblioteca padrao).
 """
 import csv
@@ -10,6 +11,7 @@ import sys
 ARQUIVO = "gbics.csv"
 NUMERICAS = ["tx_min", "tx_max", "rx_min", "rx_max", "budget"]
 OBRIGATORIAS = ["fabricante", "modelo"] + NUMERICAS
+TOL_BUDGET = 1.0  # tolerancia (dB) para coerencia do budget
 
 
 def para_numero(valor):
@@ -28,6 +30,8 @@ def main():
                 return 1
 
             problemas = []
+            avisos = []
+            vistos = {}  # modelo normalizado -> linha (para detectar duplicados)
             linha = 1  # a linha 1 e o cabecalho
             total = 0
             for row in leitor:
@@ -52,6 +56,22 @@ def main():
                                       "RX invertido (rx_min %s > rx_max %s)" % (rx_min, rx_max)))
                 if budget <= 0:
                     problemas.append((linha, modelo, "budget invalido (%s)" % budget))
+
+                # AVISO: coerencia do budget (esperado ~ tx_min - rx_min)
+                esperado = round(tx_min - rx_min, 2)
+                if abs(budget - esperado) > TOL_BUDGET:
+                    avisos.append((linha, modelo,
+                                   "budget %s difere do esperado (tx_min - rx_min = %s; dif %.1f dB)"
+                                   % (budget, esperado, abs(budget - esperado))))
+
+                # AVISO: modelo duplicado
+                chave = " ".join(modelo.lower().split())
+                if chave:
+                    if chave in vistos:
+                        avisos.append((linha, modelo,
+                                       "modelo duplicado (ja aparece na linha %d)" % vistos[chave]))
+                    else:
+                        vistos[chave] = linha
 
                 # quilometragem e opcional; se preenchida, precisa ser numero
                 # (km) ou numero com sufixo de unidade m/km. Ex.: 40, 80km, 300m.
@@ -79,16 +99,27 @@ def main():
         print("VALIDACAO FALHOU: arquivo gbics.csv nao encontrado.")
         return 1
 
+    def listar(itens):
+        for ln, mod, msg in itens:
+            print("  Linha %d  [%s]: %s" % (ln, mod, msg))
+
     if problemas:
         print("VALIDACAO FALHOU - %d problema(s):" % len(problemas))
         print("")
-        for ln, mod, msg in problemas:
-            print("  Linha %d  [%s]: %s" % (ln, mod, msg))
+        listar(problemas)
+        if avisos:
+            print("")
+            print("Avisos (%d):" % len(avisos))
+            listar(avisos)
         print("")
-        print("Corrija a planilha e tente publicar novamente.")
+        print("Corrija os problemas e tente publicar novamente.")
         return 1
 
     print("Validacao OK - %d modelos, nenhum problema." % total)
+    if avisos:
+        print("")
+        print("Avisos (%d) - nao bloqueiam, mas vale conferir:" % len(avisos))
+        listar(avisos)
     return 0
 
 

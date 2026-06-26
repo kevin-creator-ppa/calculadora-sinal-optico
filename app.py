@@ -12,6 +12,7 @@ import os
 import base64
 import html
 import math
+import re
 
 st.set_page_config(
     page_title="Calculadora de Sinal Óptico",
@@ -78,6 +79,9 @@ st.markdown('''
     .validation-card{ background:var(--bg-card); border-radius:14px; padding:18px; box-shadow:var(--shadow); border:1px solid var(--border-color); }
     .validation-title{ font-weight:700; margin-bottom:12px; }
     .validation-item{ margin-bottom:10px; padding:12px 14px; border-radius:10px; background:rgba(130,130,130,0.10); }
+    /* Indicador de faixa TX/RX */
+    .faixa-track{ position:relative; height:7px; border-radius:6px; background:rgba(130,130,130,0.22); margin:8px 4px 2px; }
+    .faixa-marker{ position:absolute; top:-4px; width:15px; height:15px; border-radius:50%; transform:translateX(-50%); border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.35); }
     .validation-item.validation-ok{ border-left:4px solid var(--success); }
     .validation-item.validation-warn{ border-left:4px solid var(--warning); background:rgba(230,167,0,0.10); }
     .validation-item.validation-error{ border-left:4px solid var(--error); background:rgba(231,76,60,0.08); }
@@ -220,6 +224,24 @@ def estado_margem(margem, margem_min):
     if margem < margem_min:
         return "warn"
     return "ok"
+
+def barra_faixa(valor, vmin, vmax, ok):
+    """Mini-barra mostrando onde a leitura cai dentro de [vmin, vmax].
+       Marcador verde se dentro, vermelho se fora (posição limitada às bordas)."""
+    try:
+        if float(vmax) == float(vmin):
+            pos = 50.0
+        else:
+            pos = (float(valor) - float(vmin)) / (float(vmax) - float(vmin)) * 100.0
+    except (TypeError, ValueError, ZeroDivisionError):
+        pos = 50.0
+    pos = max(0.0, min(100.0, pos))
+    cor = "var(--success)" if ok else "var(--error)"
+    return (
+        f'<div class="faixa-track">'
+        f'<div class="faixa-marker" style="left:{pos:.1f}%; background:{cor};"></div>'
+        f'</div>'
+    )
 
 def load_history():
     if os.path.exists("history.json"):
@@ -707,15 +729,15 @@ def main():
             <div class="validation-grid">
                 <div class="validation-card">
                     <div class="validation-title">{st.session_state.pop_a_name} - Validação</div>
-                    <div class="validation-item {'validation-ok' if tx_ok_a else 'validation-error'}">TX {tx_a} {'dentro' if tx_ok_a else '❌ fora'} de [{gbic_a['tx_min']}, {gbic_a['tx_max']}]</div>
-                    <div class="validation-item {'validation-ok' if rx_ok_a else 'validation-error'}">RX {rx_a} {'dentro' if rx_ok_a else '❌ fora'} de [{gbic_a['rx_min']}, {gbic_a['rx_max']}]</div>
+                    <div class="validation-item {'validation-ok' if tx_ok_a else 'validation-error'}">TX {tx_a} {'dentro' if tx_ok_a else '❌ fora'} de [{gbic_a['tx_min']}, {gbic_a['tx_max']}]{barra_faixa(tx_a, gbic_a['tx_min'], gbic_a['tx_max'], tx_ok_a)}</div>
+                    <div class="validation-item {'validation-ok' if rx_ok_a else 'validation-error'}">RX {rx_a} {'dentro' if rx_ok_a else '❌ fora'} de [{gbic_a['rx_min']}, {gbic_a['rx_max']}]{barra_faixa(rx_a, gbic_a['rx_min'], gbic_a['rx_max'], rx_ok_a)}</div>
                     <div class="validation-item {'validation-ok' if loss_ok_a else 'validation-error'}">Perda {loss_ab} dB {'<=' if loss_ok_a else '>'} {budget_a} dB</div>
                     <div class="validation-item validation-{estado_a}">{dot[estado_a]} Margem {margem_a} dB {'(estourou)' if estado_a == 'error' else '(no limite)' if estado_a == 'warn' else '(folga ok)'}</div>
                 </div>
                 <div class="validation-card">
                     <div class="validation-title">{st.session_state.pop_b_name} - Validação</div>
-                    <div class="validation-item {'validation-ok' if tx_ok_b else 'validation-error'}">TX {tx_b} {'dentro' if tx_ok_b else '❌ fora'} de [{gbic_b['tx_min']}, {gbic_b['tx_max']}]</div>
-                    <div class="validation-item {'validation-ok' if rx_ok_b else 'validation-error'}">RX {rx_b} {'dentro' if rx_ok_b else '❌ fora'} de [{gbic_b['rx_min']}, {gbic_b['rx_max']}]</div>
+                    <div class="validation-item {'validation-ok' if tx_ok_b else 'validation-error'}">TX {tx_b} {'dentro' if tx_ok_b else '❌ fora'} de [{gbic_b['tx_min']}, {gbic_b['tx_max']}]{barra_faixa(tx_b, gbic_b['tx_min'], gbic_b['tx_max'], tx_ok_b)}</div>
+                    <div class="validation-item {'validation-ok' if rx_ok_b else 'validation-error'}">RX {rx_b} {'dentro' if rx_ok_b else '❌ fora'} de [{gbic_b['rx_min']}, {gbic_b['rx_max']}]{barra_faixa(rx_b, gbic_b['rx_min'], gbic_b['rx_max'], rx_ok_b)}</div>
                     <div class="validation-item {'validation-ok' if loss_ok_b else 'validation-error'}">Perda {loss_ba} dB {'<=' if loss_ok_b else '>'} {budget_b} dB</div>
                     <div class="validation-item validation-{estado_b}">{dot[estado_b]} Margem {margem_b} dB {'(estourou)' if estado_b == 'error' else '(no limite)' if estado_b == 'warn' else '(folga ok)'}</div>
                 </div>
@@ -800,10 +822,22 @@ def main():
                     info_relatorio,
                 )
 
+                def _slug(texto):
+                    s = re.sub(r"[^A-Za-z0-9._-]+", "-", str(texto).strip())
+                    return s.strip("-")[:40]
+
+                partes = ["relatorio"]
+                if info_relatorio.get("circuito", "").strip():
+                    partes.append(_slug(info_relatorio["circuito"]))
+                if info_relatorio.get("cliente", "").strip():
+                    partes.append(_slug(info_relatorio["cliente"]))
+                partes.append(datetime.now().strftime("%Y%m%d_%H%M%S"))
+                nome_pdf = "_".join(p for p in partes if p) + ".pdf"
+
                 st.download_button(
                     label="Exportar PDF",
                     data=pdf_buffer,
-                    file_name=f"relatorio_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                    file_name=nome_pdf,
                     mime="application/pdf",
                     use_container_width=True
                 )
