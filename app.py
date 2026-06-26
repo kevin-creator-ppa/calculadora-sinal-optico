@@ -247,9 +247,10 @@ def validate_gbic_specs(tx, rx, gbic_row):
     return tx_ok, rx_ok, budget
 
 def generate_pdf(pop_a, pop_b, loss_ab, loss_ba, status_texto, status_estado,
-                 margem_min, app_title, section_title, pop_a_name, pop_b_name):
+                 margem_min, app_title, section_title, pop_a_name, pop_b_name, info=None):
     buffer = io.BytesIO()
     larg_pag, alt_pag = letter
+    info = info or {}
 
     CIANO = colors.HexColor('#1ca9e0')      # cabeçalho das tabelas (estilo RFC)
     TITULO = colors.HexColor('#16527f')
@@ -271,12 +272,21 @@ def generate_pdf(pop_a, pop_b, loss_ab, loss_ba, status_texto, status_estado,
     banner_bg, banner_fg = BANNER.get(status_estado, (CIANO, colors.white))
     rodape_titulo = app_title or "Calculadora de Sinal Óptico - Telium"
 
+    logo_path = "assets/telium-logo.png"
+
     def _decor(canvas, doc):
         canvas.saveState()
-        # Cabeçalho: "Telium Networks" + página, com régua preta grossa
+        # Cabeçalho: logo TELIUM (ou texto de fallback) + página, com régua preta
+        if os.path.exists(logo_path):
+            canvas.drawImage(logo_path, 0.6 * inch, alt_pag - 0.6 * inch,
+                             width=1.15 * inch, height=0.28 * inch,
+                             preserveAspectRatio=True, anchor='sw', mask='auto')
+        else:
+            canvas.setFillColor(TEXTO)
+            canvas.setFont('Helvetica-Oblique', 9)
+            canvas.drawString(0.6 * inch, alt_pag - 0.55 * inch, "Telium Networks")
         canvas.setFillColor(TEXTO)
         canvas.setFont('Helvetica-Oblique', 9)
-        canvas.drawString(0.6 * inch, alt_pag - 0.55 * inch, "Telium Networks")
         canvas.drawRightString(larg_pag - 0.6 * inch, alt_pag - 0.55 * inch, f"Página {doc.page}")
         canvas.setStrokeColor(colors.black)
         canvas.setLineWidth(2)
@@ -300,22 +310,82 @@ def generate_pdf(pop_a, pop_b, loss_ab, loss_ba, status_texto, status_estado,
     story = []
     LARG = 7.3 * inch
 
-    # --- Título da seção ---
-    titulo_style = ParagraphStyle('T', parent=styles['Normal'], fontName='Helvetica-Bold',
-                                  fontSize=16, textColor=TITULO, spaceAfter=2)
-    story.append(Paragraph("Resultados da Validação de Enlace Óptico", titulo_style))
-    story.append(HRFlowable(width="100%", thickness=1.2, color=TITULO, spaceBefore=2, spaceAfter=8))
-    if section_title:
-        meta_style = ParagraphStyle('M', parent=styles['Normal'], fontSize=9, textColor=CINZA)
-        story.append(Paragraph(section_title, meta_style))
-    story.append(Spacer(1, 0.16 * inch))
+    sec_style = ParagraphStyle('Sec', parent=styles['Normal'], fontName='Helvetica-Bold',
+                               fontSize=12, textColor=TITULO, spaceAfter=2)
 
-    # --- Banner de status (faixa sólida estilo "PASS") ---
-    banner_style = ParagraphStyle('B', parent=styles['Normal'], fontName='Helvetica-Bold',
-                                  fontSize=15, textColor=banner_fg, alignment=1)
-    banner = Table([[Paragraph(status_texto, banner_style)]], colWidths=[LARG])
+    # --- Título em painel (barra de acento ciano + fundo claro) ---
+    titulo_style = ParagraphStyle('T', parent=styles['Normal'], fontName='Helvetica-Bold',
+                                  fontSize=17, textColor=TITULO, leading=21)
+    subt_style = ParagraphStyle('Tsub', parent=styles['Normal'], fontSize=9.5,
+                                textColor=CINZA, leading=13, spaceBefore=3)
+    titulo_conteudo = [
+        Paragraph("Resultados da Validação de Enlace Óptico", titulo_style),
+        Paragraph("Relatório técnico de potência óptica em enlace de fibra", subt_style),
+    ]
+    titulo_tbl = Table([['', titulo_conteudo]], colWidths=[0.16 * inch, LARG - 0.16 * inch])
+    titulo_tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, 0), CIANO),
+        ('BACKGROUND', (1, 0), (1, 0), colors.HexColor('#eef4f9')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (1, 0), (1, 0), 14),
+        ('RIGHTPADDING', (1, 0), (1, 0), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 11),
+        ('LINEAFTER', (0, 0), (0, 0), 0, CIANO),
+    ]))
+    story.append(titulo_tbl)
+    story.append(Spacer(1, 0.18 * inch))
+
+    # --- Informações do Relatório (estilo "Job Information") ---
+    campos = [
+        ("Cliente", str(info.get("cliente", "")).strip()),
+        ("Operador", str(info.get("operador", "")).strip()),
+        ("Circuit ID", str(info.get("circuito", "")).strip()),
+        ("Comentário", str(info.get("comentario", "")).strip()),
+    ]
+    if any(v for _, v in campos):
+        story.append(Paragraph("Informações do Relatório", sec_style))
+        story.append(HRFlowable(width="100%", thickness=0.8, color=BORDA, spaceBefore=2, spaceAfter=6))
+        info_rows = [["Data", datetime.now().strftime("%d/%m/%Y %H:%M:%S")]]
+        info_rows += [[lbl, val or "—"] for lbl, val in campos]
+        info_tbl = Table(info_rows, colWidths=[1.7 * inch, LARG - 1.7 * inch])
+        info_tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f2f6fa')),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('TEXTCOLOR', (0, 0), (0, -1), TITULO),
+            ('TEXTCOLOR', (1, 0), (1, -1), TEXTO),
+            ('FONTSIZE', (0, 0), (-1, -1), 9.5),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('LINEBELOW', (0, 0), (-1, -2), 0.5, colors.white),
+            ('BOX', (0, 0), (-1, -1), 0.5, BORDA),
+        ]))
+        story.append(info_tbl)
+        story.append(Spacer(1, 0.2 * inch))
+
+    # --- Banner de status (callout com borda + descrição) ---
+    DESC = {
+        'ok': "Todas as medições dentro da especificação, com folga adequada.",
+        'warn': "Dentro da especificação, porém com folga abaixo do limite de referência.",
+        'error': "Uma ou mais medições fora da especificação.",
+    }
+    forte = COR_ESTADO.get(status_estado, CIANO)
+    banner_titulo = ParagraphStyle('B', parent=styles['Normal'], fontName='Helvetica-Bold',
+                                   fontSize=15, textColor=banner_fg, alignment=1, leading=18)
+    banner_desc = ParagraphStyle('Bd', parent=styles['Normal'], fontSize=9.5,
+                                 textColor=banner_fg, alignment=1, leading=13)
+    banner_cell = [
+        Paragraph(status_texto, banner_titulo),
+        Spacer(1, 3),
+        Paragraph(DESC.get(status_estado, ""), banner_desc),
+    ]
+    banner = Table([[banner_cell]], colWidths=[LARG])
     banner.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), banner_bg),
+        ('BOX', (0, 0), (-1, -1), 1.3, forte),
         ('TOPPADDING', (0, 0), (-1, -1), 12),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
     ]))
@@ -468,6 +538,15 @@ def main():
 
     if menu == "Calcular":
         st.markdown(f"### {st.session_state.section_title}")
+
+        with st.expander("📋 Dados do relatório (opcional — aparecem no PDF)", expanded=False):
+            jc1, jc2 = st.columns(2)
+            with jc1:
+                st.text_input("Cliente", key="rel_cliente", placeholder="Ex: Empresa X")
+                st.text_input("Circuit ID", key="rel_circuito", placeholder="Ex: CKT-00123")
+            with jc2:
+                st.text_input("Operador", key="rel_operador", placeholder="Ex: João Silva")
+                st.text_input("Comentário", key="rel_comentario", placeholder="Observações")
 
         col1, col2 = st.columns(2)
 
@@ -694,6 +773,13 @@ def main():
                     "estado": estado_b,
                 }
 
+                info_relatorio = {
+                    "cliente": st.session_state.get("rel_cliente", ""),
+                    "operador": st.session_state.get("rel_operador", ""),
+                    "circuito": st.session_state.get("rel_circuito", ""),
+                    "comentario": st.session_state.get("rel_comentario", ""),
+                }
+
                 pdf_buffer = generate_pdf(
                     pop_a_data,
                     pop_b_data,
@@ -705,7 +791,8 @@ def main():
                     st.session_state.get("app_title", "Calculadora de Sinal Óptico - Telium"),
                     st.session_state.get("section_title", ""),
                     st.session_state.get("pop_a_name", "POP A"),
-                    st.session_state.get("pop_b_name", "POP B")
+                    st.session_state.get("pop_b_name", "POP B"),
+                    info_relatorio,
                 )
 
                 st.download_button(
