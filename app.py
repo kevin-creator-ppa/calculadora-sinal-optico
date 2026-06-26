@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -249,71 +249,80 @@ def validate_gbic_specs(tx, rx, gbic_row):
 def generate_pdf(pop_a, pop_b, loss_ab, loss_ba, status_texto, status_estado,
                  margem_min, app_title, section_title, pop_a_name, pop_b_name):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=letter,
-        topMargin=0.5 * inch, bottomMargin=0.5 * inch,
-        leftMargin=0.6 * inch, rightMargin=0.6 * inch,
-    )
+    larg_pag, alt_pag = letter
 
-    AZUL = colors.HexColor('#1e6fb3')
-    AZUL_ESC = colors.HexColor('#16527f')
+    CIANO = colors.HexColor('#1ca9e0')      # cabeçalho das tabelas (estilo RFC)
+    TITULO = colors.HexColor('#16527f')
     CINZA = colors.HexColor('#5b6b7a')
-    LINHA = colors.HexColor('#e3e8ee')
-    ZEBRA = colors.HexColor('#f4f7fb')
     TEXTO = colors.HexColor('#2b3440')
+    BORDA = colors.HexColor('#c7d3de')
+    ZEBRA = colors.HexColor('#eaf1f7')
+    # banner de status (faixa sólida estilo "PASS")
+    BANNER = {
+        'ok':    (colors.HexColor('#a8d9a0'), colors.HexColor('#1e5b2a')),
+        'warn':  (colors.HexColor('#f3da8e'), colors.HexColor('#7a5b00')),
+        'error': (colors.HexColor('#e6a6a6'), colors.HexColor('#8a1f1f')),
+    }
     COR_ESTADO = {
         'ok': colors.HexColor('#27ae60'),
-        'warn': colors.HexColor('#e6a700'),
-        'error': colors.HexColor('#e74c3c'),
+        'warn': colors.HexColor('#c98a00'),
+        'error': colors.HexColor('#d23b3b'),
     }
-    cor_status = COR_ESTADO.get(status_estado, AZUL)
-    LARG = 7.3 * inch
+    banner_bg, banner_fg = BANNER.get(status_estado, (CIANO, colors.white))
+    rodape_titulo = app_title or "Calculadora de Sinal Óptico - Telium"
 
+    def _decor(canvas, doc):
+        canvas.saveState()
+        # Cabeçalho: "Telium Networks" + página, com régua preta grossa
+        canvas.setFillColor(TEXTO)
+        canvas.setFont('Helvetica-Oblique', 9)
+        canvas.drawString(0.6 * inch, alt_pag - 0.55 * inch, "Telium Networks")
+        canvas.drawRightString(larg_pag - 0.6 * inch, alt_pag - 0.55 * inch, f"Página {doc.page}")
+        canvas.setStrokeColor(colors.black)
+        canvas.setLineWidth(2)
+        canvas.line(0.6 * inch, alt_pag - 0.63 * inch, larg_pag - 0.6 * inch, alt_pag - 0.63 * inch)
+        # Rodapé: título + data, com régua preta grossa
+        canvas.line(0.6 * inch, 0.63 * inch, larg_pag - 0.6 * inch, 0.63 * inch)
+        canvas.setFillColor(TEXTO)
+        canvas.setFont('Helvetica-Bold', 9)
+        canvas.drawString(0.6 * inch, 0.46 * inch, rodape_titulo)
+        canvas.setFont('Helvetica', 9)
+        canvas.drawRightString(larg_pag - 0.6 * inch, 0.46 * inch,
+                               datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        canvas.restoreState()
+
+    doc = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        topMargin=0.95 * inch, bottomMargin=0.9 * inch,
+        leftMargin=0.6 * inch, rightMargin=0.6 * inch,
+    )
     styles = getSampleStyleSheet()
     story = []
+    LARG = 7.3 * inch
 
-    # --- Cabeçalho (faixa azul) ---
-    head_style = ParagraphStyle('Head', parent=styles['Normal'], fontName='Helvetica-Bold',
-                                fontSize=18, textColor=colors.white, leading=22)
-    sub_style = ParagraphStyle('Sub', parent=styles['Normal'], fontSize=10,
-                               textColor=colors.HexColor('#dce7f2'))
-    titulo = app_title or "Calculadora de Sinal Óptico - Telium"
-    header_tbl = Table(
-        [[Paragraph(titulo, head_style)],
-         [Paragraph("Relatório de Validação de Enlace Óptico", sub_style)]],
-        colWidths=[LARG],
-    )
-    header_tbl.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), AZUL),
-        ('LEFTPADDING', (0, 0), (-1, -1), 16),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 16),
-        ('TOPPADDING', (0, 0), (0, 0), 14),
-        ('TOPPADDING', (0, 1), (-1, 1), 0),
-        ('BOTTOMPADDING', (0, -1), (-1, -1), 14),
-    ]))
-    story.append(header_tbl)
-    story.append(Spacer(1, 0.12 * inch))
-
-    # Linha de metadados (seção + data/hora)
-    meta_style = ParagraphStyle('Meta', parent=styles['Normal'], fontSize=9, textColor=CINZA)
-    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    meta = (f"{section_title}   |   " if section_title else "") + f"Gerado em {timestamp}"
-    story.append(Paragraph(meta, meta_style))
+    # --- Título da seção ---
+    titulo_style = ParagraphStyle('T', parent=styles['Normal'], fontName='Helvetica-Bold',
+                                  fontSize=16, textColor=TITULO, spaceAfter=2)
+    story.append(Paragraph("Resultados da Validação de Enlace Óptico", titulo_style))
+    story.append(HRFlowable(width="100%", thickness=1.2, color=TITULO, spaceBefore=2, spaceAfter=8))
+    if section_title:
+        meta_style = ParagraphStyle('M', parent=styles['Normal'], fontSize=9, textColor=CINZA)
+        story.append(Paragraph(section_title, meta_style))
     story.append(Spacer(1, 0.16 * inch))
 
-    # --- Banner de status (colorido por estado) ---
-    status_style = ParagraphStyle('Status', parent=styles['Normal'], fontName='Helvetica-Bold',
-                                  fontSize=13, textColor=colors.white, alignment=1)
-    status_tbl = Table([[Paragraph(status_texto, status_style)]], colWidths=[LARG])
-    status_tbl.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), cor_status),
-        ('TOPPADDING', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    # --- Banner de status (faixa sólida estilo "PASS") ---
+    banner_style = ParagraphStyle('B', parent=styles['Normal'], fontName='Helvetica-Bold',
+                                  fontSize=15, textColor=banner_fg, alignment=1)
+    banner = Table([[Paragraph(status_texto, banner_style)]], colWidths=[LARG])
+    banner.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), banner_bg),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
     ]))
-    story.append(status_tbl)
-    story.append(Spacer(1, 0.20 * inch))
+    story.append(banner)
+    story.append(Spacer(1, 0.22 * inch))
 
-    # --- Tabela comparativa ---
+    # --- Tabela comparativa (cabeçalho ciano, zebra) ---
     linhas = [
         ["Parâmetro", pop_a_name or 'POP A', pop_b_name or 'POP B'],
         ["Interface", pop_a["interface"], pop_b["interface"]],
@@ -328,52 +337,48 @@ def generate_pdf(pop_a, pop_b, loss_ab, loss_ba, status_texto, status_estado,
     ]
     linhas = [[str(c) for c in row] for row in linhas]
     margem_row = len(linhas) - 1
-    table = Table(linhas, colWidths=[2.5 * inch, 2.4 * inch, 2.4 * inch])
+    table = Table(linhas, colWidths=[2.4 * inch, 2.45 * inch, 2.45 * inch])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), AZUL),
+        ('BACKGROUND', (0, 0), (-1, 0), CIANO),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
-        ('TEXTCOLOR', (0, 1), (0, -1), AZUL_ESC),
+        ('TEXTCOLOR', (0, 1), (0, -1), TEXTO),
         ('TEXTCOLOR', (1, 1), (-1, -1), TEXTO),
-        ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 1), (0, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('FONTSIZE', (0, 1), (-1, -1), 10),
         ('TOPPADDING', (0, 0), (-1, -1), 7),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
         ('LEFTPADDING', (0, 0), (-1, -1), 10),
         ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-        ('GRID', (0, 0), (-1, -1), 0.5, LINHA),
+        ('GRID', (0, 0), (-1, -1), 0.5, BORDA),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, ZEBRA]),
         ('TEXTCOLOR', (1, margem_row), (1, margem_row), COR_ESTADO.get(pop_a["estado"], TEXTO)),
         ('TEXTCOLOR', (2, margem_row), (2, margem_row), COR_ESTADO.get(pop_b["estado"], TEXTO)),
         ('FONTNAME', (1, margem_row), (2, margem_row), 'Helvetica-Bold'),
     ]))
     story.append(table)
-    story.append(Spacer(1, 0.22 * inch))
+    story.append(Spacer(1, 0.24 * inch))
 
     # --- Memória de cálculo ---
     sec_style = ParagraphStyle('Sec', parent=styles['Normal'], fontName='Helvetica-Bold',
-                               fontSize=11, textColor=AZUL, spaceAfter=5)
+                               fontSize=12, textColor=TITULO, spaceAfter=2)
+    story.append(Paragraph("Memória de cálculo", sec_style))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=BORDA, spaceBefore=2, spaceAfter=8))
     body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=9.5,
                                 textColor=TEXTO, leading=15)
-    story.append(Paragraph("Memória de cálculo", sec_style))
     calc = (
         f"Perda A -&gt; B = TX(A) - RX(B) = ({pop_a['tx']}) - ({pop_b['rx']}) = <b>{loss_ab} dB</b><br/>"
         f"Perda B -&gt; A = TX(B) - RX(A) = ({pop_b['tx']}) - ({pop_a['rx']}) = <b>{loss_ba} dB</b><br/>"
         f"Margem = Budget - Perda &nbsp;&nbsp;(referência de folga mínima: <b>{margem_min} dB</b>)"
     )
     story.append(Paragraph(calc, body_style))
-    story.append(Spacer(1, 0.35 * inch))
 
-    # --- Rodapé ---
-    rod_style = ParagraphStyle('Rod', parent=styles['Normal'], fontSize=8,
-                               textColor=CINZA, alignment=1)
-    story.append(Paragraph("Telium Network Solutions   -   Calculadora de Sinal Óptico", rod_style))
-
-    doc.build(story)
+    doc.build(story, onFirstPage=_decor, onLaterPages=_decor)
     buffer.seek(0)
     return buffer
 

@@ -22,3 +22,7 @@ Thumbs.db
 
 # Config local do Claude Code
 .claude/
+
+# Renders/temporarios de PDF
+_*.png
+_*.pdf
