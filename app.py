@@ -456,6 +456,7 @@ def main():
             estado_b = estado_margem(margem_b, margem_min)
             margem_pior = min(margem_a, margem_b)
             estado_pior = estado_margem(margem_pior, margem_min)
+            dot = {"ok": "🟢", "warn": "🟡", "error": "🔴"}
 
             alcance_a = alcance_texto(gbic_a.get("quilometragem"))
             alcance_b = alcance_texto(gbic_b.get("quilometragem"))
@@ -540,7 +541,7 @@ def main():
                 st.markdown(f"""
                 <div class="metric-box">
                     <div class="metric-label">Margem (folga)</div>
-                    <div class="metric-value sem-{estado_pior}">{margem_pior} dB</div>
+                    <div class="metric-value sem-{estado_pior}">{dot[estado_pior]} {margem_pior} dB</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -554,14 +555,14 @@ def main():
                     <div class="validation-item {'validation-ok' if tx_ok_a else 'validation-error'}">TX {tx_a} {'dentro' if tx_ok_a else '❌ fora'} de [{gbic_a['tx_min']}, {gbic_a['tx_max']}]</div>
                     <div class="validation-item {'validation-ok' if rx_ok_a else 'validation-error'}">RX {rx_a} {'dentro' if rx_ok_a else '❌ fora'} de [{gbic_a['rx_min']}, {gbic_a['rx_max']}]</div>
                     <div class="validation-item {'validation-ok' if loss_ok_a else 'validation-error'}">Perda {loss_ab} dB {'<=' if loss_ok_a else '>'} {budget_a} dB</div>
-                    <div class="validation-item validation-{estado_a}">Margem {margem_a} dB {'(estourou)' if estado_a == 'error' else '(no limite)' if estado_a == 'warn' else '(folga ok)'}</div>
+                    <div class="validation-item validation-{estado_a}">{dot[estado_a]} Margem {margem_a} dB {'(estourou)' if estado_a == 'error' else '(no limite)' if estado_a == 'warn' else '(folga ok)'}</div>
                 </div>
                 <div class="validation-card">
                     <div class="validation-title">{st.session_state.pop_b_name} - Validação</div>
                     <div class="validation-item {'validation-ok' if tx_ok_b else 'validation-error'}">TX {tx_b} {'dentro' if tx_ok_b else '❌ fora'} de [{gbic_b['tx_min']}, {gbic_b['tx_max']}]</div>
                     <div class="validation-item {'validation-ok' if rx_ok_b else 'validation-error'}">RX {rx_b} {'dentro' if rx_ok_b else '❌ fora'} de [{gbic_b['rx_min']}, {gbic_b['rx_max']}]</div>
                     <div class="validation-item {'validation-ok' if loss_ok_b else 'validation-error'}">Perda {loss_ba} dB {'<=' if loss_ok_b else '>'} {budget_b} dB</div>
-                    <div class="validation-item validation-{estado_b}">Margem {margem_b} dB {'(estourou)' if estado_b == 'error' else '(no limite)' if estado_b == 'warn' else '(folga ok)'}</div>
+                    <div class="validation-item validation-{estado_b}">{dot[estado_b]} Margem {margem_b} dB {'(estourou)' if estado_b == 'error' else '(no limite)' if estado_b == 'warn' else '(folga ok)'}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -570,11 +571,11 @@ def main():
             no_limite = all_ok and estado_pior == "warn"
 
             if not all_ok:
-                status_classe, status_texto = "status-error", "ENLACE FORA DE ESPECIFICAÇÃO ❌"
+                status_classe, status_texto = "status-error", "🔴 ENLACE FORA DE ESPECIFICAÇÃO ❌"
             elif no_limite:
-                status_classe, status_texto = "status-warn", "ENLACE NO LIMITE ⚠️"
+                status_classe, status_texto = "status-warn", "🟡 ENLACE NO LIMITE ⚠️"
             else:
-                status_classe, status_texto = "status-ok", "ENLACE DENTRO DA ESPECIFICAÇÃO"
+                status_classe, status_texto = "status-ok", "🟢 ENLACE DENTRO DA ESPECIFICAÇÃO ✅"
 
             st.markdown(f"""
             <div class="status-container">
