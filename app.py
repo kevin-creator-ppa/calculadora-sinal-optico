@@ -291,13 +291,23 @@ def generate_pdf(pop_a, pop_b, loss_ab, loss_ba, status_texto, status_estado,
         canvas.setStrokeColor(colors.black)
         canvas.setLineWidth(2)
         canvas.line(0.6 * inch, alt_pag - 0.63 * inch, larg_pag - 0.6 * inch, alt_pag - 0.63 * inch)
-        # Rodapé: título + data, com régua preta grossa
+        # Acento ciano fino logo abaixo da régua (toque de marca, liga ao tema das tabelas)
+        canvas.setStrokeColor(CIANO)
+        canvas.setLineWidth(1.5)
+        canvas.line(0.6 * inch, alt_pag - 0.655 * inch, larg_pag - 0.6 * inch, alt_pag - 0.655 * inch)
+
+        # Rodapé: régua preta + logo à esquerda, título ao centro e data à direita
+        canvas.setStrokeColor(colors.black)
+        canvas.setLineWidth(2)
         canvas.line(0.6 * inch, 0.63 * inch, larg_pag - 0.6 * inch, 0.63 * inch)
-        canvas.setFillColor(TEXTO)
-        canvas.setFont('Helvetica-Bold', 9)
-        canvas.drawString(0.6 * inch, 0.46 * inch, rodape_titulo)
-        canvas.setFont('Helvetica', 9)
-        canvas.drawRightString(larg_pag - 0.6 * inch, 0.46 * inch,
+        if os.path.exists(logo_path):
+            canvas.drawImage(logo_path, 0.6 * inch, 0.37 * inch,
+                             width=0.85 * inch, height=0.18 * inch,
+                             preserveAspectRatio=True, anchor='sw', mask='auto')
+        canvas.setFillColor(CINZA)
+        canvas.setFont('Helvetica', 8)
+        canvas.drawCentredString(larg_pag / 2, 0.45 * inch, rodape_titulo)
+        canvas.drawRightString(larg_pag - 0.6 * inch, 0.45 * inch,
                                datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         canvas.restoreState()
 
@@ -399,7 +409,6 @@ def generate_pdf(pop_a, pop_b, loss_ab, loss_ba, status_texto, status_estado,
         ["TX (dBm)", pop_a["tx"], pop_b["tx"]],
         ["RX (dBm)", pop_a["rx"], pop_b["rx"]],
         ["GBIC / SFP", pop_a["gbic"], pop_b["gbic"]],
-        ["Comprimento de onda", pop_a["onda"], pop_b["onda"]],
         ["Alcance nominal", pop_a["alcance"], pop_b["alcance"]],
         ["Budget (dB)", pop_a["budget"], pop_b["budget"]],
         ["Perda (dB)", pop_a["perda"], pop_b["perda"]],
