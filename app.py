@@ -246,66 +246,132 @@ def validate_gbic_specs(tx, rx, gbic_row):
 
     return tx_ok, rx_ok, budget
 
-def generate_pdf(pop_a_data, pop_b_data, loss_ab, loss_ba, gbic_model, gbic_budget, status, app_title, section_title, pop_a_name, pop_b_name):
+def generate_pdf(pop_a, pop_b, loss_ab, loss_ba, status_texto, status_estado,
+                 margem_min, app_title, section_title, pop_a_name, pop_b_name):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
-
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=16,
-        textColor=colors.HexColor('#1a73e8'),
-        spaceAfter=12,
-        alignment=1
+    doc = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        topMargin=0.5 * inch, bottomMargin=0.5 * inch,
+        leftMargin=0.6 * inch, rightMargin=0.6 * inch,
     )
 
+    AZUL = colors.HexColor('#1e6fb3')
+    AZUL_ESC = colors.HexColor('#16527f')
+    CINZA = colors.HexColor('#5b6b7a')
+    LINHA = colors.HexColor('#e3e8ee')
+    ZEBRA = colors.HexColor('#f4f7fb')
+    TEXTO = colors.HexColor('#2b3440')
+    COR_ESTADO = {
+        'ok': colors.HexColor('#27ae60'),
+        'warn': colors.HexColor('#e6a700'),
+        'error': colors.HexColor('#e74c3c'),
+    }
+    cor_status = COR_ESTADO.get(status_estado, AZUL)
+    LARG = 7.3 * inch
+
+    styles = getSampleStyleSheet()
     story = []
-    story.append(Paragraph(app_title or "Calculadora de Sinal Óptico - Telium", title_style))
-    if section_title:
-        subtitle_style = ParagraphStyle('SubTitle', parent=styles['Normal'], alignment=1, spaceAfter=8, textColor=colors.HexColor('#333333'))
-        story.append(Paragraph(section_title, subtitle_style))
-    story.append(Spacer(1, 0.3*inch))
 
-    data_table = [
-        ["Parâmetro", pop_a_name or 'POP A', pop_b_name or 'POP B'],
-        ["Interface", pop_a_data["interface"], pop_b_data["interface"]],
-        ["TX (dBm)", str(pop_a_data["tx"]), str(pop_b_data["tx"])],
-        ["RX (dBm)", str(pop_a_data["rx"]), str(pop_b_data["rx"])],
-        ["GBIC", pop_a_data["gbic"], pop_b_data["gbic"]],
-        ["Perda (dB)", str(pop_a_data["perda"]), str(pop_b_data["perda"])],
-    ]
-
-    table = Table(data_table, colWidths=[2*inch, 2*inch, 2*inch])
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a73e8')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    # --- Cabeçalho (faixa azul) ---
+    head_style = ParagraphStyle('Head', parent=styles['Normal'], fontName='Helvetica-Bold',
+                                fontSize=18, textColor=colors.white, leading=22)
+    sub_style = ParagraphStyle('Sub', parent=styles['Normal'], fontSize=10,
+                               textColor=colors.HexColor('#dce7f2'))
+    titulo = app_title or "Calculadora de Sinal Óptico - Telium"
+    header_tbl = Table(
+        [[Paragraph(titulo, head_style)],
+         [Paragraph("Relatório de Validação de Enlace Óptico", sub_style)]],
+        colWidths=[LARG],
+    )
+    header_tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), AZUL),
+        ('LEFTPADDING', (0, 0), (-1, -1), 16),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 16),
+        ('TOPPADDING', (0, 0), (0, 0), 14),
+        ('TOPPADDING', (0, 1), (-1, 1), 0),
+        ('BOTTOMPADDING', (0, -1), (-1, -1), 14),
     ]))
+    story.append(header_tbl)
+    story.append(Spacer(1, 0.12 * inch))
 
-    story.append(table)
-    story.append(Spacer(1, 0.2*inch))
-
-    calc_text = f"""
-    <b>Cálculos:</b><br/>
-    Perda A -> B: ({pop_a_data['tx']}) - ({pop_b_data['rx']}) = {loss_ab} dB<br/>
-    Perda B -> A: ({pop_b_data['tx']}) - ({pop_a_data['rx']}) = {loss_ba} dB<br/>
-    <br/>
-    <b>Budget da GBIC ({gbic_model}):</b> {gbic_budget} dB<br/>
-    <br/>
-    <b>Status:</b> {status}
-    """
-    story.append(Paragraph(calc_text, styles['Normal']))
-    story.append(Spacer(1, 0.2*inch))
-
+    # Linha de metadados (seção + data/hora)
+    meta_style = ParagraphStyle('Meta', parent=styles['Normal'], fontSize=9, textColor=CINZA)
     timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    footer = Paragraph(f"<i>Relatório gerado em: {timestamp}</i>", styles['Normal'])
-    story.append(footer)
+    meta = (f"{section_title}   |   " if section_title else "") + f"Gerado em {timestamp}"
+    story.append(Paragraph(meta, meta_style))
+    story.append(Spacer(1, 0.16 * inch))
+
+    # --- Banner de status (colorido por estado) ---
+    status_style = ParagraphStyle('Status', parent=styles['Normal'], fontName='Helvetica-Bold',
+                                  fontSize=13, textColor=colors.white, alignment=1)
+    status_tbl = Table([[Paragraph(status_texto, status_style)]], colWidths=[LARG])
+    status_tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), cor_status),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    story.append(status_tbl)
+    story.append(Spacer(1, 0.20 * inch))
+
+    # --- Tabela comparativa ---
+    linhas = [
+        ["Parâmetro", pop_a_name or 'POP A', pop_b_name or 'POP B'],
+        ["Interface", pop_a["interface"], pop_b["interface"]],
+        ["TX (dBm)", pop_a["tx"], pop_b["tx"]],
+        ["RX (dBm)", pop_a["rx"], pop_b["rx"]],
+        ["GBIC / SFP", pop_a["gbic"], pop_b["gbic"]],
+        ["Comprimento de onda", pop_a["onda"], pop_b["onda"]],
+        ["Alcance nominal", pop_a["alcance"], pop_b["alcance"]],
+        ["Budget (dB)", pop_a["budget"], pop_b["budget"]],
+        ["Perda (dB)", pop_a["perda"], pop_b["perda"]],
+        ["Margem (dB)", pop_a["margem"], pop_b["margem"]],
+    ]
+    linhas = [[str(c) for c in row] for row in linhas]
+    margem_row = len(linhas) - 1
+    table = Table(linhas, colWidths=[2.5 * inch, 2.4 * inch, 2.4 * inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), AZUL),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+        ('TEXTCOLOR', (0, 1), (0, -1), AZUL_ESC),
+        ('TEXTCOLOR', (1, 1), (-1, -1), TEXTO),
+        ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 0.5, LINHA),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, ZEBRA]),
+        ('TEXTCOLOR', (1, margem_row), (1, margem_row), COR_ESTADO.get(pop_a["estado"], TEXTO)),
+        ('TEXTCOLOR', (2, margem_row), (2, margem_row), COR_ESTADO.get(pop_b["estado"], TEXTO)),
+        ('FONTNAME', (1, margem_row), (2, margem_row), 'Helvetica-Bold'),
+    ]))
+    story.append(table)
+    story.append(Spacer(1, 0.22 * inch))
+
+    # --- Memória de cálculo ---
+    sec_style = ParagraphStyle('Sec', parent=styles['Normal'], fontName='Helvetica-Bold',
+                               fontSize=11, textColor=AZUL, spaceAfter=5)
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=9.5,
+                                textColor=TEXTO, leading=15)
+    story.append(Paragraph("Memória de cálculo", sec_style))
+    calc = (
+        f"Perda A -&gt; B = TX(A) - RX(B) = ({pop_a['tx']}) - ({pop_b['rx']}) = <b>{loss_ab} dB</b><br/>"
+        f"Perda B -&gt; A = TX(B) - RX(A) = ({pop_b['tx']}) - ({pop_a['rx']}) = <b>{loss_ba} dB</b><br/>"
+        f"Margem = Budget - Perda &nbsp;&nbsp;(referência de folga mínima: <b>{margem_min} dB</b>)"
+    )
+    story.append(Paragraph(calc, body_style))
+    story.append(Spacer(1, 0.35 * inch))
+
+    # --- Rodapé ---
+    rod_style = ParagraphStyle('Rod', parent=styles['Normal'], fontSize=8,
+                               textColor=CINZA, alignment=1)
+    story.append(Paragraph("Telium Network Solutions   -   Calculadora de Sinal Óptico", rod_style))
 
     doc.build(story)
     buffer.seek(0)
@@ -429,13 +495,11 @@ def main():
             gbic_b_selected = st.selectbox("SFP", options=opts_b, key=f"gbic_b_{fab_b}")
             gbic_b = df_fab_b.iloc[opts_b.index(gbic_b_selected)]
 
+        # Limite de folga abaixo do qual o enlace é marcado como "no limite" (amarelo).
+        margem_min = 3.0
+
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            margem_min = st.number_input(
-                "Margem mínima de segurança (dB)",
-                min_value=0.0, value=3.0, step=0.5, key="margem_min",
-                help="Abaixo dessa folga o enlace é marcado como 'no limite' (amarelo), mesmo dentro da spec."
-            )
             if st.button("INICIAR CÁLCULO", use_container_width=True, key="calc_button"):
                 st.session_state.calcular = True
 
@@ -571,11 +635,17 @@ def main():
             no_limite = all_ok and estado_pior == "warn"
 
             if not all_ok:
+                estado_geral = "error"
                 status_classe, status_texto = "status-error", "🔴 ENLACE FORA DE ESPECIFICAÇÃO ❌"
+                status_pdf = "ENLACE FORA DE ESPECIFICAÇÃO"
             elif no_limite:
+                estado_geral = "warn"
                 status_classe, status_texto = "status-warn", "🟡 ENLACE NO LIMITE ⚠️"
+                status_pdf = "ENLACE NO LIMITE"
             else:
+                estado_geral = "ok"
                 status_classe, status_texto = "status-ok", "🟢 ENLACE DENTRO DA ESPECIFICAÇÃO ✅"
+                status_pdf = "ENLACE DENTRO DA ESPECIFICAÇÃO"
 
             st.markdown(f"""
             <div class="status-container">
@@ -598,7 +668,12 @@ def main():
                     "tx": tx_a,
                     "rx": rx_a,
                     "gbic": gbic_a["modelo"],
-                    "perda": loss_ab
+                    "onda": onda_a or "—",
+                    "alcance": alcance_a or "—",
+                    "budget": budget_a,
+                    "perda": loss_ab,
+                    "margem": margem_a,
+                    "estado": estado_a,
                 }
 
                 pop_b_data = {
@@ -606,19 +681,22 @@ def main():
                     "tx": tx_b,
                     "rx": rx_b,
                     "gbic": gbic_b["modelo"],
-                    "perda": loss_ba
+                    "onda": onda_b or "—",
+                    "alcance": alcance_b or "—",
+                    "budget": budget_b,
+                    "perda": loss_ba,
+                    "margem": margem_b,
+                    "estado": estado_b,
                 }
-
-                status = status_texto
 
                 pdf_buffer = generate_pdf(
                     pop_a_data,
                     pop_b_data,
                     loss_ab,
                     loss_ba,
-                    gbic_a["modelo"],
-                    budget_a,
-                    status,
+                    status_pdf,
+                    estado_geral,
+                    margem_min,
                     st.session_state.get("app_title", "Calculadora de Sinal Óptico - Telium"),
                     st.session_state.get("section_title", ""),
                     st.session_state.get("pop_a_name", "POP A"),
