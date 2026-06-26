@@ -617,8 +617,6 @@ def main():
 
             alcance_a = alcance_texto(gbic_a.get("quilometragem"))
             alcance_b = alcance_texto(gbic_b.get("quilometragem"))
-            onda_a = onda_texto(gbic_a.get("comprimento_onda"))
-            onda_b = onda_texto(gbic_b.get("comprimento_onda"))
 
             # Valor de alcance para a métrica: combina A e B
             if alcance_a and alcance_b:
@@ -641,7 +639,7 @@ def main():
                     <div class="result-row"><span class="result-label">TX:</span> <span class="result-value">{tx_a} dBm</span></div>
                     <div class="result-row"><span class="result-label">RX:</span> <span class="result-value">{rx_a} dBm</span></div>
                     <div class="result-row"><span class="result-label">GBIC:</span> <span class="result-value">{gbic_a["modelo"]}</span></div>
-                    {f'<div class="result-row"><span class="result-label">Onda:</span> <span class="result-value">{onda_a}</span></div>' if onda_a else ''}{f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_a}</span></div>' if alcance_a else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ab} dB</span></div>
+                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_a}</span></div>' if alcance_a else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ab} dB</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -653,7 +651,7 @@ def main():
                     <div class="result-row"><span class="result-label">TX:</span> <span class="result-value">{tx_b} dBm</span></div>
                     <div class="result-row"><span class="result-label">RX:</span> <span class="result-value">{rx_b} dBm</span></div>
                     <div class="result-row"><span class="result-label">GBIC:</span> <span class="result-value">{gbic_b["modelo"]}</span></div>
-                    {f'<div class="result-row"><span class="result-label">Onda:</span> <span class="result-value">{onda_b}</span></div>' if onda_b else ''}{f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_b}</span></div>' if alcance_b else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ba} dB</span></div>
+                    {f'<div class="result-row"><span class="result-label">Alcance:</span> <span class="result-value">{alcance_b}</span></div>' if alcance_b else ''}<div class="result-row" style="margin-top: 10px;"><span class="result-label">Perda:</span> <span class="result-value">{loss_ba} dB</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -761,7 +759,6 @@ def main():
                     "tx": tx_a,
                     "rx": rx_a,
                     "gbic": gbic_a["modelo"],
-                    "onda": onda_a or "—",
                     "alcance": alcance_a or "—",
                     "budget": budget_a,
                     "perda": loss_ab,
@@ -774,7 +771,6 @@ def main():
                     "tx": tx_b,
                     "rx": rx_b,
                     "gbic": gbic_b["modelo"],
-                    "onda": onda_b or "—",
                     "alcance": alcance_b or "—",
                     "budget": budget_b,
                     "perda": loss_ba,
